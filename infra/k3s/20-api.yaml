@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tp-devsecops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: tp-api:phase1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            # Port-forward frontend => http://localhost:8080
+            - name: CORS_ORIGIN
+              value: "http://localhost:8080"
+            # DNS interne Kubernetes (service name)
+            - name: WEATHER_SERVICE_URL
+              value: "http://weather:4000"
+            - name: LOG_FORMAT
+              value: "combined"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: tp-devsecops
+spec:
+  type: ClusterIP
+  selector:
+    app: api
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
