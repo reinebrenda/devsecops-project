@@ -1,4 +1,35 @@
-__pycache__/
-*.pyc
-.env
+# OS / Editors
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env files (on ne commit pas les secrets)
+.env
+.env.*
+!.env.example
+
+# Build / dist
+dist/
+build/
+coverage/
+
+# Node
+node_modules/
+
+# Docker
+*.tar
+*.tgz
+
+# Kubernetes local tools
+.kube/
+
