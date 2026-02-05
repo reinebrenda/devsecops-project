@@ -14,8 +14,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Env files (on ne commit pas les secrets)
-.env
-.env.*
+**/.env
+**/.env.*
 !.env.example
 
 # Build / dist
