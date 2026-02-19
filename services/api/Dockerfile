@@ -1,16 +1,19 @@
-FROM node:20-alpine
-
+# ---------- deps ----------
+FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Install deps
+# Install only dependencies first (better cache)
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copy source
-COPY src ./src
+# ---------- runtime ----------
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
 
-# Env (overridable at runtime)
-ENV PORT=3000
-EXPOSE 3000
+# Copy node_modules + source
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-CMD ["node", "src/index.js"]
+EXPOSE 4000
+CMD ["node", "index.js"]
