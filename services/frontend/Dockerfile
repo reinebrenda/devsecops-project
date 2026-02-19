@@ -1,21 +1,23 @@
-# Build stage
+# ---------- build ----------
 FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm i --omit=dev
 
 COPY . .
 
-# Vite reads VITE_* at build time
-ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
+# Build-time variable for CRA
+ARG REACT_APP_API_BASE
+ENV REACT_APP_API_BASE=$REACT_APP_API_BASE
 
 RUN npm run build
 
-# Run stage
+# ---------- runtime ----------
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+# Replace default nginx website
+RUN rm -rf /usr/share/nginx/html/*
+COPY --from=build /app/build /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
