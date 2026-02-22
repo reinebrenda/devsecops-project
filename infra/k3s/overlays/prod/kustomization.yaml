@@ -3,13 +3,13 @@ resources:
 
 images:
   - name: devsecops-api
-    newName: ghcr.io/OWNER/REPO-api
+    newName: ghcr.io/reinebrenda/devsecops-project-api
     newTag: latest
 
   - name: devsecops-external
-    newName: ghcr.io/OWNER/REPO-external
+    newName: ghcr.io/reinebrenda/devsecops-project-external
     newTag: latest
 
   - name: devsecops-frontend
-    newName: ghcr.io/OWNER/REPO-frontend
+    newName: ghcr.io/reinebrenda/devsecops-project-frontend
     newTag: latest
