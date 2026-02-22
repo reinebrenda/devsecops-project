@@ -1,0 +1,17 @@
+resources:
+  - 00-namespace.yaml
+
+  - 10-postgres-configmap-init.yaml
+  - 11-postgres-statefulset.yaml
+  - 12-postgres-service.yaml
+
+  - 20-external-deployment.yaml
+  - 21-external-service.yaml
+
+  - 30-api-deployment.yaml
+  - 31-api-service.yaml
+
+  - 40-frontend-deployment.yaml
+  - 41-frontend-service.yaml
+
+  - 50-ingress.yaml

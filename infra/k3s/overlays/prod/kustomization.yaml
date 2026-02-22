@@ -1,0 +1,15 @@
+resources:
+  - ../../base
+
+images:
+  - name: devsecops-api
+    newName: ghcr.io/OWNER/REPO-api
+    newTag: latest
+
+  - name: devsecops-external
+    newName: ghcr.io/OWNER/REPO-external
+    newTag: latest
+
+  - name: devsecops-frontend
+    newName: ghcr.io/OWNER/REPO-frontend
+    newTag: latest
