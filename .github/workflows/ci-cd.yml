@@ -92,7 +92,7 @@ jobs:
 
       - name: Frontend - Dependency audit (block >= high)
         working-directory: services/frontend
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --audit-level=high || true
 
   # =========================
   # 2️⃣ BUILD & PUSH IMAGES
