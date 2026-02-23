@@ -13,12 +13,16 @@ spec:
       labels:
         app: api
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: api
           image: devsecops-api:1.0
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 4000
+            - name: http
+              containerPort: 4000
           env:
             - name: PORT
               value: "4000"
@@ -36,3 +40,17 @@ spec:
               value: appdb
             - name: EXTERNAL_SERVICE_URL
               value: http://external-service:4001
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

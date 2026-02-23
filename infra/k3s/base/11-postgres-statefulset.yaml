@@ -14,11 +14,16 @@ spec:
       labels:
         app: postgres
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 999
       containers:
         - name: postgres
           image: postgres:16-alpine
           ports:
-            - containerPort: 5432
+            - name: postgres
+              containerPort: 5432
           env:
             - name: POSTGRES_DB
               value: appdb
@@ -26,12 +31,15 @@ spec:
               value: appuser
             - name: POSTGRES_PASSWORD
               value: apppassword
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
             - name: init
               mountPath: /docker-entrypoint-initdb.d
-          # Pas de hardening demandé => root ok, pas de securityContext
       volumes:
         - name: init
           configMap:
