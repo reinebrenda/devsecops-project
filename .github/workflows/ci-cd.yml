@@ -36,7 +36,7 @@ jobs:
   # =========================
   # 2️⃣ TEST PHASE & SCA (npm audit)
   # =========================
-  test_and_sca:
+  tests_and_sca:
     name: Tests + SCA (npm audit)
     runs-on: ubuntu-latest
     needs: security_checks
