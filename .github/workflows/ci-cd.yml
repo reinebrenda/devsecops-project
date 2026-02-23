@@ -6,17 +6,40 @@ on:
   pull_request:
     branches: ["main"]
 
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository }}
 
 jobs:
 
-  # =========================
-  # 1️⃣ TEST PHASE
-  # =========================
-  test:
+  # -------------------------
+  # 1) SHIFT-LEFT SECURITY
+  # -------------------------
+  security_checks:
+    name: Security - Secrets Scan (Gitleaks)
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks (block on secrets)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --redact --verbose
+
+  # =========================
+  # 2️⃣ TEST PHASE & SCA (npm audit)
+  # =========================
+  test_and_sca:
+    name: Tests + SCA (npm audit)
+    runs-on: ubuntu-latest
+    needs: security_checks
 
     steps:
       - name: Checkout repository
@@ -32,33 +55,52 @@ jobs:
             services/external-service/package-lock.json
             services/frontend/package-lock.json
 
-      # API tests
-      - name: Install & Test API
+      # ----- API -----
+      - name: API - Install
         working-directory: services/api
-        run: |
-          npm ci
-          npm test
+        run: npm ci
 
-      # External service (optional tests)
-      - name: Install External Service
+      - name: API - Tests
+        working-directory: services/api
+        run: npm test
+
+      - name: API - Dependency audit (block >= high)
+        working-directory: services/api
+        run: npm audit --audit-level=high
+
+      # ----- External service -----
+      - name: External - Install
         working-directory: services/external-service
-        run: |
-          npm ci
-          npm test || echo "No tests yet"
+        run: npm ci
 
-      # Frontend build check
-      - name: Install & Build Frontend
+      - name: External - Tests (optional)
+        working-directory: services/external-service
+        run: npm test || echo "No tests yet for external-service"
+
+      - name: External - Dependency audit (block >= high)
+        working-directory: services/external-service
+        run: npm audit --audit-level=high
+
+      # ----- Frontend -----
+      - name: Frontend - Install
         working-directory: services/frontend
-        run: |
-          npm ci
-          npm run build
+        run: npm ci
+
+      - name: Frontend - Build (smoke)
+        working-directory: services/frontend
+        run: npm run build
+
+      - name: Frontend - Dependency audit (block >= high)
+        working-directory: services/frontend
+        run: npm audit --audit-level=high
 
   # =========================
   # 2️⃣ BUILD & PUSH IMAGES
   # =========================
   build_and_push:
-    needs: test
+    name: Build & Push Images (GHCR)
     runs-on: ubuntu-latest
+    needs: tests_and_sca
     if: github.event_name == 'push'
 
     permissions:
@@ -76,6 +118,9 @@ jobs:
         id: meta
         run: echo "sha_tag=sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -91,6 +136,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./services/api
+          file: ./services/api/Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:latest
@@ -101,6 +147,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./services/external-service
+          file: ./services/external-service/Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-external:latest
@@ -111,6 +158,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./services/frontend
+          file: ./services/frontend/Dockerfile
           push: true
           build-args: |
             REACT_APP_API_BASE=
@@ -118,14 +166,57 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta.outputs.sha_tag }}
 
+  # ---------------------------------------
+  # 4) IMAGE SCAN (TRIVY) - BLOCKING
+  # ---------------------------------------
+  image_scan:
+    name: Image Scan (Trivy) - block HIGH/CRITICAL
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Scan API image
+        uses: aquasecurity/trivy-action@0.19.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:${{ needs.build_and_push.outputs.sha_tag }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
+      - name: Scan External image
+        uses: aquasecurity/trivy-action@0.19.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-external:${{ needs.build_and_push.outputs.sha_tag }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
+      - name: Scan Frontend image
+        uses: aquasecurity/trivy-action@0.19.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ needs.build_and_push.outputs.sha_tag }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
   # =========================
   # 3️⃣ UPDATE KUSTOMIZE (CD)
   # =========================
   update_manifests:
-    needs: build_and_push
+    name: CD - Update Kustomize Tags
     runs-on: ubuntu-latest
+    needs: image_scan
     if: github.event_name == 'push'
-
     permissions:
       contents: write
 
@@ -133,19 +224,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Update kustomize image tags
+      - name: Update image tags in Kustomize overlay
         run: |
           SHA_TAG="sha-${GITHUB_SHA::7}"
+          FILE="infra/k3s/overlays/prod/kustomization.yaml"
 
-          sed -i "0,/newTag:/s/newTag:.*/newTag: ${SHA_TAG}/" infra/k3s/overlays/prod/kustomization.yaml
-          sed -i "0,/newTag:/s/newTag:.*/newTag: ${SHA_TAG}/" infra/k3s/overlays/prod/kustomization.yaml
-          sed -i "0,/newTag:/s/newTag:.*/newTag: ${SHA_TAG}/" infra/k3s/overlays/prod/kustomization.yaml
+          echo "Updating images to tag: $SHA_TAG"
 
-      - name: Commit and push updated manifests
+          # Update API
+          sed -i "/name: devsecops-api/{n; n; s/newTag:.*/newTag: ${SHA_TAG}/}" $FILE
+
+          # Update External
+          sed -i "/name: devsecops-external/{n; n; s/newTag:.*/newTag: ${SHA_TAG}/}" $FILE
+
+          # Update Frontend
+          sed -i "/name: devsecops-frontend/{n; n; s/newTag:.*/newTag: ${SHA_TAG}/}" $FILE
+
+          echo "Updated file content:"
+          cat $FILE
+
+      - name: Commit & Push changes
         run: |
           git config user.name "ci-bot"
           git config user.email "ci-bot@users.noreply.github.com"
-
           git add infra/k3s/overlays/prod/kustomization.yaml
-          git commit -m "CD: Deploy ${GITHUB_SHA::7}" || echo "No changes to commit"
+          git commit -m "CD: deploy ${GITHUB_SHA::7}" || echo "No changes"
           git push
