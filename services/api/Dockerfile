@@ -2,16 +2,24 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Install only dependencies first (better cache)
+# Force production deps
+ENV NODE_ENV=production
+ENV npm_config_production=true
+
 COPY package*.json ./
+
+# Install ONLY production deps
 RUN npm ci --omit=dev
+
+# Safety check: fail build if jest is present
+RUN test ! -d node_modules/jest && test ! -d node_modules/@jest
 
 # ---------- runtime ----------
 FROM node:20-alpine
 WORKDIR /app
+
 ENV NODE_ENV=production
 
-# Copy node_modules + source
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
