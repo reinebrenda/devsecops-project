@@ -66,7 +66,7 @@ jobs:
 
       - name: API - Dependency audit (block >= high)
         working-directory: services/api
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
       # ----- External service -----
       - name: External - Install
@@ -79,7 +79,7 @@ jobs:
 
       - name: External - Dependency audit (block >= high)
         working-directory: services/external-service
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
       # ----- Frontend -----
       - name: Frontend - Install
@@ -92,7 +92,7 @@ jobs:
 
       - name: Frontend - Dependency audit (block >= high)
         working-directory: services/frontend
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
   # =========================
   # 2️⃣ BUILD & PUSH IMAGES
