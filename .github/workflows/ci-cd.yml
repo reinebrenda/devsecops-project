@@ -138,6 +138,7 @@ jobs:
           context: ./services/api
           file: ./services/api/Dockerfile
           push: true
+          no-cache: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:${{ steps.meta.outputs.sha_tag }}
