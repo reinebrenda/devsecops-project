@@ -1,5 +1,5 @@
 # ---------- deps ----------
-FROM node:25.6.1-alpine3.23 AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 
 # Install only dependencies first (better cache)
@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 # ---------- runtime ----------
-FROM node:25.6.1-alpine3.23
+FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
