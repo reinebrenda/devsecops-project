@@ -13,6 +13,8 @@ spec:
       labels:
         app: api
     spec:
+      serviceAccountName: sa-api
+      automountServiceAccountToken: false
       securityContext:
         seccompProfile:
           type: RuntimeDefault

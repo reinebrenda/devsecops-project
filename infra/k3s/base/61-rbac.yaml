@@ -1,0 +1,37 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: role-read-configmaps
+  namespace: devsecops
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rb-api-read-configmaps
+  namespace: devsecops
+subjects:
+  - kind: ServiceAccount
+    name: sa-api
+    namespace: devsecops
+roleRef:
+  kind: Role
+  name: role-read-configmaps
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rb-external-read-configmaps
+  namespace: devsecops
+subjects:
+  - kind: ServiceAccount
+    name: sa-external
+    namespace: devsecops
+roleRef:
+  kind: Role
+  name: role-read-configmaps
+  apiGroup: rbac.authorization.k8s.io

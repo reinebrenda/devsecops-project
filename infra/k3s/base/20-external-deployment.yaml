@@ -13,6 +13,8 @@ spec:
       labels:
         app: external-service
     spec:
+      serviceAccountName: sa-external
+      automountServiceAccountToken: false
       securityContext:
         seccompProfile:
           type: RuntimeDefault

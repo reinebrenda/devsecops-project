@@ -13,6 +13,8 @@ spec:
       labels:
         app: frontend
     spec:
+      serviceAccountName: sa-frontend
+      automountServiceAccountToken: false
       securityContext:
         seccompProfile:
           type: RuntimeDefault
