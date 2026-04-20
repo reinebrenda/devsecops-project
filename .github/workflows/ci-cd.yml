@@ -180,7 +180,7 @@ jobs:
 
     steps:
       - name: Scan API image
-        uses: aquasecurity/trivy-action@0.19.0
+        uses: aquasecurity/trivy-action@0.20.0            
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:${{ needs.build_and_push.outputs.sha_tag }}
           format: table
@@ -190,7 +190,7 @@ jobs:
           severity: CRITICAL
 
       - name: Scan External image
-        uses: aquasecurity/trivy-action@0.19.0
+        uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-external:${{ needs.build_and_push.outputs.sha_tag }}
           format: table
@@ -200,7 +200,7 @@ jobs:
           severity: CRITICAL
 
       - name: Scan Frontend image
-        uses: aquasecurity/trivy-action@0.19.0
+        uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ needs.build_and_push.outputs.sha_tag }}
           format: table
