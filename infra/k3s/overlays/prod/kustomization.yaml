@@ -4,12 +4,12 @@ resources:
 images:
   - name: devsecops-api
     newName: ghcr.io/reinebrenda/devsecops-project-api
-    newTag: sha-f9cfad2
+    newTag: sha-7f34bad
 
   - name: devsecops-external
     newName: ghcr.io/reinebrenda/devsecops-project-external
-    newTag: sha-f9cfad2
+    newTag: sha-7f34bad
 
   - name: devsecops-frontend
     newName: ghcr.io/reinebrenda/devsecops-project-frontend
-    newTag: sha-f9cfad2
+    newTag: sha-7f34bad
