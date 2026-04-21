@@ -56,22 +56,28 @@ app.post("/api/orders", async (req, res) => {
 
   // Validation des entrées
   if (!customerName || typeof customerName !== "string" || customerName.trim().length === 0) {
-    return res.status(400).json({ error: "customerName est requis et doit être une chaîne de caractères" });
+    return res.status(400).json({ error: "customerName est requis" });
   }
-  if (customerName.length > 100) {
-    return res.status(400).json({ error: "customerName ne doit pas dépasser 100 caractères" });
+  if (customerName.trim().length < 2) {
+    return res.status(400).json({ error: "customerName doit avoir au moins 2 caracteres" });
   }
-  if (/<[^>]*>/.test(customerName)) {
-    return res.status(400).json({ error: "customerName contient des caracteres invalides" });
+  if (customerName.trim().length > 50) {
+    return res.status(400).json({ error: "customerName ne doit pas depasser 50 caracteres" });
+  }
+  if (!/^[a-zA-ZÀ-ÿ\s\-]+$/.test(customerName.trim())) {
+    return res.status(400).json({ error: "customerName ne doit contenir que des lettres — chiffres et caracteres speciaux interdits" });
   }
   if (amount === undefined || amount === null || isNaN(Number(amount))) {
-    return res.status(400).json({ error: "amount est requis et doit être un nombre" });
+    return res.status(400).json({ error: "amount doit etre un nombre" });
   }
   if (Number(amount) <= 0) {
-    return res.status(400).json({ error: "amount doit être positif" });
+    return res.status(400).json({ error: "amount doit etre positif" });
   }
   if (Number(amount) > 1000000) {
-    return res.status(400).json({ error: "amount ne doit pas dépasser 1 000 000" });
+    return res.status(400).json({ error: "amount ne doit pas depasser 1 000 000" });
+  }
+  if (!Number.isFinite(Number(amount))) {
+    return res.status(400).json({ error: "amount invalide" });
   };
   logger.info({ customerName, amount }, "create order request");
 
