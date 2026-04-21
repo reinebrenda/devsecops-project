@@ -137,4 +137,5 @@ This project is purposefully incomplete in several areas to serve as discussion 
 - Trivy only blocks CRITICAL severities, not HIGH
 - Frontend `npm audit` failures are silently ignored (`|| true`)
 
-See [ANALYSIS.md](./ANALYSIS.md) for the full breakdown.
+
+
