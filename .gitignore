@@ -33,3 +33,6 @@ node_modules/
 # Kubernetes local tools
 .kube/
 
+#personal files
+ANALYSIS.md
+
