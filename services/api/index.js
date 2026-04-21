@@ -12,9 +12,20 @@ const logger = pino({
 
 const app = express();
 const cors = require("cors");
-app.use(cors({ origin: "*" }));
+app.use(cors({ origin: "http://192.168.56.113" }));
 app.use(express.json());
 app.use(morgan("combined"));
+const rateLimit = require("express-rate-limit");
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,    // 1 minute
+  max: 100,                // 100 requêtes max par minute
+  message: { error: "Trop de requêtes, réessayez dans une minute." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use("/api/", limiter);
 
 app.get("/health", async (req, res) => {
   try {
@@ -32,8 +43,27 @@ app.get("/api/orders", async (req, res) => {
 });
 
 app.post("/api/orders", async (req, res) => {
-  // volontairement simple (pas de validation avancée)
   const { customerName, amount } = req.body || {};
+
+  // Validation des entrées
+  if (!customerName || typeof customerName !== "string" || customerName.trim().length === 0) {
+    return res.status(400).json({ error: "customerName est requis et doit être une chaîne de caractères" });
+  }
+  if (customerName.length > 100) {
+    return res.status(400).json({ error: "customerName ne doit pas dépasser 100 caractères" });
+  }
+  if (/<[^>]*>/.test(customerName)) {
+    return res.status(400).json({ error: "customerName contient des caracteres invalides" });
+  }
+  if (amount === undefined || amount === null || isNaN(Number(amount))) {
+    return res.status(400).json({ error: "amount est requis et doit être un nombre" });
+  }
+  if (Number(amount) <= 0) {
+    return res.status(400).json({ error: "amount doit être positif" });
+  }
+  if (Number(amount) > 1000000) {
+    return res.status(400).json({ error: "amount ne doit pas dépasser 1 000 000" });
+  };
   logger.info({ customerName, amount }, "create order request");
 
   // Appel service externe (annexe)
