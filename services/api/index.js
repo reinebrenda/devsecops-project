@@ -38,8 +38,17 @@ app.get("/health", async (req, res) => {
 });
 
 app.get("/api/orders", async (req, res) => {
-  const r = await pool.query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 50");
-  res.json(r.rows);
+  const { customerName } = req.query;
+  if (customerName) {
+    const r = await pool.query(
+      "SELECT * FROM orders WHERE customer_name = $1 ORDER BY created_at DESC LIMIT 50",
+      [customerName]
+    );
+    res.json(r.rows);
+  } else {
+    const r = await pool.query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 50");
+    res.json(r.rows);
+  }
 });
 
 app.post("/api/orders", async (req, res) => {
